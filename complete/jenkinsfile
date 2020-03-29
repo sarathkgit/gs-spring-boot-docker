@@ -45,7 +45,16 @@ node {
       
       dockerImage = docker.build("spring-boot-java")
     }
-   
+ 
+    stage('Run Docker Image'){
+      
+      // deploy docker image to nexus
+
+      echo "Docker Image Tag Name: ${dockerImageTag}"
+      
+      sh "docker run -d -p 8010:8080 -t ${dockerImageName}"
+    }
+ 
     stage('Deploy Docker Image'){
       
       // deploy docker image to nexus
