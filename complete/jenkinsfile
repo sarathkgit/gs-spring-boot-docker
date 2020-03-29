@@ -53,14 +53,14 @@ stage('Publish Tests Results'){
     }
 stage("Docker Run") {     
 	steps {
-          sh "docker run -d -p 8030:8080 -t $(dockerImageName)"
+          sh "docker run -d -p 8030:8080 -t ${dockerImageName}"
 	  }
 }
 stage("Docker push") {
 	steps {
    sh "docker login -u $DOCKER_USER -p $DOCKER_PASSWORD"
-   sh "docker tag $(dockerImageName) $DOCKER_USER/$(dockerImageTag)"
-   sh "docker push $DOCKER_USER/$(dockerImageTag)"
+   sh "docker tag ${dockerImageName} $DOCKER_USER/${dockerImageTag}"
+   sh "docker push $DOCKER_USER/${dockerImageTag}"
      }
 }
 
