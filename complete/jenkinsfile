@@ -52,18 +52,14 @@ stage('Publish Tests Results'){
       dockerImage = docker.build("spring-boot-java")
     }
 }
-stage("Docker Run") {
-     steps {
-      
+stage("Docker Run") {      
           sh "docker run -d -p 8030:8080 -t $(dockerImageName)"
-     }
 }
 stage("Docker push") {
-     steps {
    sh "docker login -u $DOCKER_USER -p $DOCKER_PASSWORD"
    sh "docker tag $(dockerImageName) $DOCKER_USER/$(dockerImageTag)"
    sh "docker push $DOCKER_USER/$(dockerImageTag)"
-     }
+     
 }
 
      
