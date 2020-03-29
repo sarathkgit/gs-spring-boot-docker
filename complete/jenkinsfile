@@ -1,34 +1,36 @@
-node {
-    // reference to maven
-    // ** NOTE: This 'maven-3.6.1' Maven tool must be configured in the Jenkins Global Configuration.   
-    def mvnHome = tool 'maven-3.6.1'
+pipeline {
+     agent any
+	 
+	 def dockerImage
+	 def dockerImageName = "spring-boot-java"
+     def dockerImageTag = "${dockerImageName}:${env.BUILD_NUMBER}"
+	 
+	 stage('Clone Repo') {
+	 
+	 git 'https://github.com/sarathkgit/gs-spring-boot-docker.git'
+	 
+	 }
+	 
+     stages {
+          stage("Compile") {
+               steps {
+                    sh "./mvnw compile"
+               }
+          }
+          stage("Unit test") {
+               steps {
+                    sh "./mvnw test"
+               }
+          }
+     
+    
+stage("Package") {
+     steps {
+          sh "./mvnw package"
+     }
+}
 
-    // holds reference to docker image
-    def dockerImage
-    // ip address of the docker private repository(nexus)
-    
-    //def dockerRepoUrl = "localhost:8083"
-    def dockerImageName = "spring-boot-java"
-    def dockerImageTag = "${dockerImageName}:${env.BUILD_NUMBER}"
-    
-    stage('Clone Repo') { // for display purposes
-      // Get some code from a GitHub repository
-      git 'https://github.com/sarathkgit/gs-spring-boot-docker.git'
-      // Get the Maven tool.
-      // ** NOTE: This 'maven-3.6.1' Maven tool must be configured
-      // **       in the global configuration.           
-      mvnHome = tool 'maven-3.6.1'
-    }    
-  
-    stage('Build Project') {
-      // build project via maven
-      
-      //sh "'${mvnHome}/bin/mvn' -Dmaven.test.failure.ignore clean package"
-      sh "'${M2_HOME}/bin/.mvnw' -Dmaven.test.failure.ignore clean package"
-      //sh "./mvnw clean compile package"
-    }
-	
-	stage('Publish Tests Results'){
+stage('Publish Tests Results'){
       parallel(
         publishJunitTestsResultsToJenkins: {
           echo "Publish junit Tests Results"
@@ -39,33 +41,31 @@ node {
           echo "This is branch b"
       })
     }
-		
-    stage('Build Docker Image') {
+	
+ stage('Build Docker Image') {
       // build docker image
-      sh "whoami"
+      
+	  sh "whoami"
       sh "ls -all /var/run/docker.sock"
       sh "mv ./target/gs*.jar ./data" 
       
       dockerImage = docker.build("spring-boot-java")
     }
- 
-    stage('Run Docker Image'){
+}
+stage("Docker Run") {
+     steps {
       
-      // deploy docker image to nexus
+          sh "docker run -d -p 8030:8080 -t $DOCKER_USER/$(dockerImageName)"
+     }
+}
+stage("Docker push") {
+     steps {
+   sh "docker login -u $DOCKER_USER -p $DOCKER_PASSWORD"
+   sh "docker tag $(dockerImageName) $DOCKER_USER/$(dockerImageTag)"
+   sh "docker push $DOCKER_USER/$(dockerImageTag)"
+     }
+}
 
-      echo "Docker Image Tag Name: ${dockerImageTag}"
-      
-      sh "docker run -d -p 8010:8080 -t ${dockerImageName}"
-    }
- 
-    stage('Deploy Docker Image'){
-      
-      // deploy docker image to nexus
-
-      echo "Docker Image Tag Name: ${dockerImageTag}"
-
-      sh "docker login -u $DOCKER_USER -p $DOCKER_PASSWORD"
-      sh "docker tag ${dockerImageName} $DOCKER_USER/${dockerImageTag}"
-      sh "docker push $DOCKER_USER/${dockerImageTag}"
-    }
+     
+}
 }
